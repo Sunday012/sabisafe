@@ -1,12 +1,21 @@
-import { runFraudAnalysis } from './security/pipeline.js'
-import { MESSAGE_SIGNALS } from './security/signals.js'
+import { runFraudAnalysis } from './security/pipeline'
+import { MESSAGE_SIGNALS } from './security/signals'
+import type { AnalysisResult, Evidence } from './security/types'
+
+export type { AnalysisResult, Evidence, ExplanationLanguage } from './security/types'
+
+export interface HighlightedPart {
+  text: string
+  flagged: boolean
+  key: string
+}
 
 /** Public adapter retained for the UI and future API consumers. */
-export function analyseText(text, claimedBrand = '') {
+export function analyseText(text: string, claimedBrand = ''): AnalysisResult {
   return runFraudAnalysis({ text, claimedBrand })
 }
 
-export function highlightMessage(text, evidence) {
+export function highlightMessage(text: string, evidence: Evidence[]): HighlightedPart[] {
   const patterns = MESSAGE_SIGNALS
     .filter((signal) => evidence.some((item) => item.id === signal.id))
     .map((signal) => signal.pattern.source)

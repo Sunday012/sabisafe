@@ -3,7 +3,11 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './styles.css'
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const root = document.getElementById('root')
+
+if (!root) throw new Error('SabiSafe root element was not found')
+
+ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,

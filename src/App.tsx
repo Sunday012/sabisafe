@@ -1,15 +1,28 @@
-import React, { useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import type { Dispatch, MouseEvent, SetStateAction } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import {
   ArrowRight, BadgeCheck, Ban, Check, ChevronDown, CircleAlert, Copy, Download,
   FileAudio, FileText, Flag, Globe2, Headphones, Image as ImageIcon, Languages,
   Link2, LoaderCircle, LockKeyhole, Menu, MessageSquareText, PhoneCall, RefreshCw,
-  Search, ShieldCheck, Sparkles, Upload, Volume2, X,
+  Search, ShieldCheck, Sparkles, Volume2, X,
 } from 'lucide-react'
 import { analyseText, highlightMessage } from './engine'
+import type { AnalysisResult, ExplanationLanguage } from './engine'
 
 const EXAMPLE = 'Dear customer, your bank account will be suspended today. Click this link immediately to update your BVN: https://gtbank-secure-update.xyz'
 
-const MODES = [
+type GuardMode = 'message' | 'link' | 'call'
+
+interface ModeDefinition {
+  id: GuardMode
+  label: string
+  icon: LucideIcon
+  title: string
+  hint: string
+}
+
+const MODES: ModeDefinition[] = [
   { id: 'message', label: 'Message Guard', icon: MessageSquareText, title: 'Check a suspicious message', hint: 'Paste an SMS, WhatsApp message, email, or upload a screenshot.' },
   { id: 'link', label: 'Link Guard', icon: Link2, title: 'Inspect a suspicious link', hint: 'Check where a link leads and whether the domain matches who sent it.' },
   { id: 'call', label: 'Call Guard', icon: PhoneCall, title: 'Analyse a recorded call', hint: 'Upload an audio recording or try our scam-call demo.' },
@@ -33,14 +46,27 @@ function Header() {
   </header>
 }
 
-function ModeTabs({ mode, setMode }) {
+interface ModeTabsProps {
+  mode: GuardMode
+  setMode: (mode: GuardMode) => void
+}
+
+function ModeTabs({ mode, setMode }: ModeTabsProps) {
   return <div className="mode-tabs" role="tablist">
     {MODES.map((item) => <button key={item.id} role="tab" aria-selected={mode === item.id} className={mode === item.id ? 'active' : ''} onClick={() => setMode(item.id)}><item.icon size={18} />{item.label}</button>)}
   </div>
 }
 
-function MessageInput({ value, setValue, onAnalyse, loading, onImage }) {
-  const fileRef = useRef(null)
+interface MessageInputProps {
+  value: string
+  setValue: Dispatch<SetStateAction<string>>
+  onAnalyse: (override?: string | MouseEvent<HTMLButtonElement>) => void
+  loading: boolean
+  onImage: (file?: File) => Promise<void>
+}
+
+function MessageInput({ value, setValue, onAnalyse, loading, onImage }: MessageInputProps) {
+  const fileRef = useRef<HTMLInputElement>(null)
   return <>
     <div className="textarea-wrap">
       <label className="sr-only" htmlFor="suspicious-message">Suspicious message</label>
@@ -57,7 +83,12 @@ function MessageInput({ value, setValue, onAnalyse, loading, onImage }) {
   </>
 }
 
-function LinkInput({ value, setValue, brand, setBrand, onAnalyse, loading }) {
+interface LinkInputProps extends Omit<MessageInputProps, 'onImage'> {
+  brand: string
+  setBrand: Dispatch<SetStateAction<string>>
+}
+
+function LinkInput({ value, setValue, brand, setBrand, onAnalyse, loading }: LinkInputProps) {
   return <>
     <label className="field-label" htmlFor="url">Suspicious link</label>
     <div className="single-input"><Link2 size={19} /><input id="url" value={value} onChange={(event) => setValue(event.target.value)} placeholder="e.g. secure-bank-update.xyz" /></div>
@@ -67,8 +98,13 @@ function LinkInput({ value, setValue, brand, setBrand, onAnalyse, loading }) {
   </>
 }
 
-function CallInput({ onAnalyse, loading }) {
-  const audioRef = useRef(null)
+interface CallInputProps {
+  onAnalyse: (transcript: string) => void
+  loading: boolean
+}
+
+function CallInput({ onAnalyse, loading }: CallInputProps) {
+  const audioRef = useRef<HTMLInputElement>(null)
   const transcript = "Hello, this is your bank's customer care. Your account will be blocked today. Tell me the OTP we just sent you immediately so I can stop it. Do not contact the branch."
   return <>
     <button className="drop-zone" onClick={() => audioRef.current?.click()}>
@@ -82,15 +118,19 @@ function CallInput({ onAnalyse, loading }) {
   </>
 }
 
-function Scanner({ onResult }) {
-  const [mode, setMode] = useState('message')
+interface ScannerProps {
+  onResult: Dispatch<SetStateAction<AnalysisResult | null>>
+}
+
+function Scanner({ onResult }: ScannerProps) {
+  const [mode, setMode] = useState<GuardMode>('message')
   const [value, setValue] = useState('')
   const [brand, setBrand] = useState('')
   const [loading, setLoading] = useState(false)
   const [ocrStatus, setOcrStatus] = useState('')
-  const active = MODES.find((item) => item.id === mode)
+  const active = MODES.find((item) => item.id === mode) ?? MODES[0]!
 
-  const analyse = (override) => {
+  const analyse = (override?: string | MouseEvent<HTMLButtonElement>) => {
     const content = typeof override === 'string' ? override : value
     if (!content.trim()) return
     setLoading(true)
@@ -102,7 +142,7 @@ function Scanner({ onResult }) {
     }, 650)
   }
 
-  const readImage = async (file) => {
+  const readImage = async (file?: File) => {
     if (!file) return
     setOcrStatus('Reading text from screenshot…')
     setLoading(true)
@@ -133,7 +173,7 @@ function Scanner({ onResult }) {
   </section>
 }
 
-function RiskDial({ score }) {
+function RiskDial({ score }: { score: number }) {
   const circumference = 2 * Math.PI * 54
   return <div className="dial-wrap">
     <svg viewBox="0 0 128 128" className="risk-dial" aria-label={`${score}% scam likelihood`}>
@@ -144,8 +184,13 @@ function RiskDial({ score }) {
   </div>
 }
 
-function Result({ result, onReset }) {
-  const [language, setLanguage] = useState('english')
+interface ResultProps {
+  result: AnalysisResult | null
+  onReset: () => void
+}
+
+function Result({ result, onReset }: ResultProps) {
+  const [language, setLanguage] = useState<ExplanationLanguage>('english')
   const [copied, setCopied] = useState(false)
   const [reported, setReported] = useState(false)
   if (!result) return null
@@ -218,7 +263,7 @@ function LearnSection() {
 }
 
 export default function App() {
-  const [result, setResult] = useState(null)
+  const [result, setResult] = useState<AnalysisResult | null>(null)
   return <div id="top">
     <Header />
     <main>

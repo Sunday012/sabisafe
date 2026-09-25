@@ -6,7 +6,7 @@
     "study"
   ],
   "study": {
-    "output": "src/data/modules.js",
+    "output": "src/data/modules.ts",
     "sourceGlobs": [
       "src/**/*",
       "app/**/*",
@@ -24,7 +24,7 @@
     ]
   },
   "docs": {
-    "output": "src/data/docs.js",
+    "output": "src/data/docs.ts",
     "sourceGlobs": [
       "src/**/*",
       "app/**/*",

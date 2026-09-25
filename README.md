@@ -1,6 +1,6 @@
 # SabiSafe
 
-AI-assisted scam detection for Nigerian messages, links, screenshots, and call recordings.
+AI-assisted scam detection for Nigerian messages, links, screenshots, and call recordings, built with React and strict TypeScript.
 
 ## Run locally
 
@@ -47,3 +47,5 @@ message / link
 ```
 
 Run the policy tests with `npm test`.
+
+Run `npm run typecheck` to validate the complete TypeScript project without emitting files.
