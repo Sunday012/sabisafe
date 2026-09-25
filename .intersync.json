@@ -1,0 +1,61 @@
+{
+  "provider": "cloud",
+  "apiKeyEnv": "ANTHROPIC_API_KEY",
+  "fallback": "ollama",
+  "modes": [
+    "study"
+  ],
+  "study": {
+    "output": "src/data/modules.js",
+    "sourceGlobs": [
+      "src/**/*",
+      "app/**/*",
+      "pages/**/*",
+      "components/**/*",
+      "lib/**/*",
+      "public/**/*",
+      "package.json",
+      "package-lock.json",
+      "pnpm-lock.yaml",
+      "yarn.lock",
+      "vite.config.*",
+      "next.config.*",
+      "tsconfig*.json"
+    ]
+  },
+  "docs": {
+    "output": "src/data/docs.js",
+    "sourceGlobs": [
+      "src/**/*",
+      "app/**/*",
+      "pages/**/*",
+      "components/**/*",
+      "lib/**/*",
+      "public/**/*",
+      "docs/**/*",
+      "README.md",
+      "package.json",
+      "vite.config.*",
+      "next.config.*",
+      "tsconfig*.json"
+    ]
+  },
+  "anthropic": {
+    "judgeModel": "claude-haiku-4-5",
+    "generateModel": "claude-sonnet-5"
+  },
+  "openai": {
+    "apiKeyEnv": "OPENAI_API_KEY",
+    "judgeModel": "gpt-4o-mini",
+    "generateModel": "gpt-4o",
+    "baseURL": "https://api.openai.com/v1"
+  },
+  "cloud": {
+    "tokenEnv": "INTERSYNC_TOKEN",
+    "baseURL": "http://127.0.0.1:8080"
+  },
+  "ollama": {
+    "baseURL": "http://127.0.0.1:11434",
+    "model": "llama3.2"
+  }
+}
