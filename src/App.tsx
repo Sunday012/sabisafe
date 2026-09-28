@@ -9,7 +9,7 @@ import {
   ShieldCheck, Sparkles, Trash2, Upload, UserRound, Volume2, WalletCards, X,
 } from 'lucide-react'
 import { analysePayment, analyseText, highlightMessage } from './engine'
-import { LearnSection } from './LearnSection'
+import { ArticleView, LearnSection } from './LearnSection'
 import type { AnalysisResult, ExplanationLanguage } from './engine'
 import { clearHistory, loadHistory, saveCheck } from './features/history'
 import type { GuardKind, SavedCheck } from './features/history'
@@ -712,6 +712,53 @@ export default function App() {
   const previousUser = useRef<string | null>(null)
   const userId = account.user?.id ?? null
 
+  // Article routing state
+  const [activeArticleSlug, setActiveArticleSlug] = useState<string | null>(() => {
+    const m = window.location.hash.match(/^#\/learn\/(.+)$/)
+    return m ? m[1] : null
+  })
+  const landingScrollY = useRef<number>(0)
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const m = window.location.hash.match(/^#\/learn\/(.+)$/)
+      const nextSlug = m ? m[1] : null
+
+      if (nextSlug && !activeArticleSlug) {
+        landingScrollY.current = window.scrollY
+      }
+
+      setActiveArticleSlug(nextSlug)
+
+      if (nextSlug) {
+        window.scrollTo(0, 0)
+      } else if (landingScrollY.current > 0) {
+        const savedY = landingScrollY.current
+        requestAnimationFrame(() => {
+          if (window.location.hash === '#learn') {
+            const targetEl = document.getElementById('learn')
+            if (targetEl) {
+              targetEl.scrollIntoView({ behavior: 'smooth' })
+              return
+            }
+          }
+          window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior })
+        })
+      }
+    }
+
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [activeArticleSlug])
+
+  const goBackToLanding = () => {
+    if (window.history.length > 1) {
+      window.location.hash = '/#learn'
+    } else {
+      window.location.hash = ''
+    }
+  }
+
   useEffect(() => {
     if (!userId) {
       if (previousUser.current) { clearHistory(); setHistory([]) }
@@ -766,6 +813,47 @@ export default function App() {
   }
 
   if (isMobile && !onboardingComplete) return <MobileOnboarding initialPage={onboardingStart} initialPreferences={preferences} onComplete={completeOnboarding} />
+
+  // Standalone Article Page View (Header + Article + Footer)
+  if (activeArticleSlug) {
+    return (
+      <div id="top">
+        <Header
+          inDashboard={desktopStarted}
+          onEnterApp={() => enterDesktop()}
+          onProfile={() => setAccountOpen(true)}
+          signedIn={Boolean(account.user)}
+          installPrompt={installPrompt}
+          onInstall={install}
+        />
+        <ArticleView
+          slug={activeArticleSlug}
+          onBack={goBackToLanding}
+          onOpenTool={(tool) => {
+            goBackToLanding()
+            if (!isMobile) {
+              enterDesktop(tool as GuardKind)
+            }
+          }}
+        />
+        {accountOpen && (
+          <AccountSheet
+            account={account}
+            syncState={syncState}
+            historyCount={history.length}
+            onClose={() => setAccountOpen(false)}
+            onEditPreferences={() => { setOnboardingStart(2); setOnboardingComplete(false) }}
+          />
+        )}
+        <footer>
+          <div className="brand"><BrandMark /><span>SabiSafe</span></div>
+          <p>Safety guidance, not a guarantee. Verify unexpected requests through official channels.</p>
+          <span>© 2026 SabiSafe</span>
+        </footer>
+      </div>
+    )
+  }
+
   if (isMobile) return <MobileDashboard account={account} syncState={syncState} preferences={preferences} historyEnabled={historyEnabled} setHistoryEnabled={setHistoryEnabled} history={history} setHistory={setHistory} presented={presented} onResult={receiveResult} onClearResult={() => setPresented(null)} onClearHistory={clearAllHistory} onEditPreferences={() => { setOnboardingStart(2); setOnboardingComplete(false) }} installPrompt={installPrompt} onInstall={install} />
 
   return <div id="top"><Header inDashboard={desktopStarted} onEnterApp={() => enterDesktop()} onProfile={() => setAccountOpen(true)} signedIn={Boolean(account.user)} installPrompt={installPrompt} onInstall={install} />{desktopStarted ? <DesktopDashboard initialGuard={desktopGuard} presented={presented} onResult={receiveResult} onClearResult={() => setPresented(null)} historyEnabled={historyEnabled} setHistoryEnabled={setHistoryEnabled} history={history} setHistory={setHistory} accountBacked={Boolean(account.user)} onClearHistory={clearAllHistory} /> : <DesktopLanding onStart={enterDesktop} />}{accountOpen && <AccountSheet account={account} syncState={syncState} historyCount={history.length} onClose={() => setAccountOpen(false)} onEditPreferences={() => { setOnboardingStart(2); setOnboardingComplete(false) }} />}<footer><div className="brand"><BrandMark /><span>SabiSafe</span></div><p>Safety guidance, not a guarantee. Verify unexpected requests through official channels.</p><span>© 2026 SabiSafe</span></footer></div>

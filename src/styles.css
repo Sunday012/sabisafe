@@ -4008,11 +4008,63 @@ footer .brand-mark {
   opacity: .4;
 }
 
-/* ── Article view ─────────────────────────────────────────────── */
+/* ── Article view & Standalone Page ────────────────────────────── */
+.article-page-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  box-sizing: border-box;
+}
+
 .article-view {
-  max-width: 680px;
+  max-width: 720px;
   margin: 0 auto;
   padding-bottom: 40px;
+}
+
+/* Breadcrumbs nav */
+.article-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.breadcrumb-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--green);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+
+.breadcrumb-link:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-sep {
+  color: #a0a0b5;
+  flex: 0 0 auto;
+}
+
+.breadcrumb-cat {
+  color: #4f5060;
+  font-weight: 600;
+}
+
+.breadcrumb-current {
+  color: var(--ink);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
 }
 
 /* Reading progress bar */
@@ -4037,7 +4089,7 @@ footer .brand-mark {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   padding-top: 4px;
 }
 
@@ -4045,19 +4097,21 @@ footer .brand-mark {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
+  padding: 8px 14px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: #fff;
   color: #4f5060;
   font-size: 12px;
   font-weight: 700;
-  min-height: 44px;
-  transition: background .14s;
+  min-height: 40px;
+  transition: background .14s, border-color .14s;
 }
 
 .article-back:hover {
   background: #f5f5fb;
+  border-color: var(--green);
+  color: var(--green);
 }
 
 .article-share {
@@ -4071,7 +4125,7 @@ footer .brand-mark {
   color: var(--green);
   font-size: 12px;
   font-weight: 700;
-  min-height: 44px;
+  min-height: 40px;
   transition: background .14s;
 }
 
@@ -4079,14 +4133,14 @@ footer .brand-mark {
   background: var(--green-soft);
 }
 
-/* Article hero */
+/* Article hero - sits directly on page (no big bordered box) */
 .article-hero {
-  margin-bottom: 32px;
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: #fff;
-  box-shadow: 0 4px 20px rgba(57, 68, 150, .07);
+  margin-bottom: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .article-cat-tag {
@@ -4103,8 +4157,8 @@ footer .brand-mark {
 
 .article-title {
   margin: 0 0 12px;
-  font: 800 clamp(21px, 5vw, 28px)/1.2 'Manrope', sans-serif;
-  letter-spacing: -.7px;
+  font: 800 clamp(22px, 5vw, 32px)/1.2 'Manrope', sans-serif;
+  letter-spacing: -.8px;
   color: #1a1a2e;
 }
 
@@ -4113,8 +4167,8 @@ footer .brand-mark {
   flex-wrap: wrap;
   align-items: center;
   gap: 14px;
-  margin-bottom: 16px;
-  font-size: 11px;
+  margin-bottom: 20px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -4128,7 +4182,7 @@ footer .brand-mark {
 .pidgin-toggle {
   width: 100%;
   min-height: 44px;
-  padding: 10px 14px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4136,7 +4190,7 @@ footer .brand-mark {
   border-radius: 12px;
   background: #fafafe;
   color: var(--green-dark);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   text-align: left;
   transition: background .15s, border-color .15s;
@@ -4175,34 +4229,34 @@ footer .brand-mark {
 /* Article body */
 .article-body {
   padding: 0 2px;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 .article-h2 {
-  margin: 28px 0 12px;
-  font: 700 18px/1.3 'Manrope', sans-serif;
+  margin: 32px 0 14px;
+  font: 700 20px/1.3 'Manrope', sans-serif;
   letter-spacing: -.4px;
   color: #1a1a2e;
 }
 
 .article-p {
-  margin: 0 0 16px;
-  font-size: 15px;
-  line-height: 1.72;
+  margin: 0 0 18px;
+  font-size: 16px;
+  line-height: 1.75;
   color: #3b3c52;
 }
 
 .article-list {
-  margin: 0 0 18px 0;
+  margin: 0 0 20px 0;
   padding: 0;
   list-style: none;
 }
 
 .article-list li {
   position: relative;
-  padding: 8px 0 8px 20px;
-  font-size: 14px;
-  line-height: 1.6;
+  padding: 10px 0 10px 22px;
+  font-size: 15px;
+  line-height: 1.65;
   color: #3b3c52;
   border-bottom: 1px solid #f3f2fa;
 }
@@ -4215,7 +4269,7 @@ footer .brand-mark {
   content: '';
   position: absolute;
   left: 0;
-  top: 17px;
+  top: 19px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -4224,12 +4278,12 @@ footer .brand-mark {
 
 /* Callout boxes */
 .article-callout {
-  margin: 4px 0 20px;
-  padding: 14px 16px;
+  margin: 8px 0 24px;
+  padding: 16px 18px;
   border-left: 4px solid;
-  border-radius: 0 12px 12px 0;
-  font-size: 13px;
-  line-height: 1.6;
+  border-radius: 0 14px 14px 0;
+  font-size: 14px;
+  line-height: 1.65;
 }
 
 .article-callout.callout-red-flag {
@@ -4256,7 +4310,7 @@ footer .brand-mark {
   gap: 7px;
   margin-bottom: 6px;
   font-weight: 800;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .4px;
   text-transform: uppercase;
 }
@@ -4269,10 +4323,10 @@ footer .brand-mark {
 .article-try-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px;
-  margin-bottom: 28px;
-  border-radius: 18px;
+  gap: 14px;
+  padding: 24px;
+  margin-bottom: 36px;
+  border-radius: 20px;
   background: linear-gradient(135deg, #5362d8 0%, #7a5ce9 100%);
   color: #fff;
   box-shadow: 0 12px 28px rgba(83, 98, 216, .28), inset 0 1px 0 rgba(255, 255, 255, .18);
@@ -4290,14 +4344,14 @@ footer .brand-mark {
 
 .article-try-card strong {
   display: block;
-  font: 700 16px 'Manrope', sans-serif;
-  margin-bottom: 2px;
+  font: 700 17px 'Manrope', sans-serif;
+  margin-bottom: 3px;
 }
 
 .article-try-card p {
   margin: 0;
-  font-size: 12px;
-  color: rgba(255, 255, 255, .8);
+  font-size: 13px;
+  color: rgba(255, 255, 255, .85);
   line-height: 1.55;
 }
 
@@ -4306,12 +4360,12 @@ footer .brand-mark {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 10px 16px;
+  padding: 10px 18px;
   border: 1.5px solid rgba(255, 255, 255, .4);
   border-radius: 10px;
   background: rgba(255, 255, 255, .14);
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   min-height: 44px;
   transition: background .15s;
@@ -4327,8 +4381,8 @@ footer .brand-mark {
 }
 
 .article-read-next h3 {
-  margin: 0 0 12px;
-  font: 700 14px 'Manrope', sans-serif;
+  margin: 0 0 14px;
+  font: 700 15px 'Manrope', sans-serif;
   color: #4f5070;
   letter-spacing: .2px;
 }
@@ -4336,17 +4390,17 @@ footer .brand-mark {
 .read-next-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .read-next-card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
-  padding: 14px;
+  gap: 8px;
+  padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 15px;
+  border-radius: 16px;
   background: #fff;
   text-align: left;
   min-height: 44px;
@@ -4369,10 +4423,10 @@ footer .brand-mark {
 }
 
 .read-next-card strong {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #1a1a2e;
-  line-height: 1.3;
+  line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -4383,37 +4437,39 @@ footer .brand-mark {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
   margin-top: auto;
 }
 
 .learn-not-found {
-  padding: 40px 20px;
+  padding: 80px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  color: var(--muted);
+  justify-content: center;
+  gap: 14px;
+  color: var(--ink);
   text-align: center;
 }
 
 .learn-not-found svg {
   color: var(--green);
-  opacity: .4;
+  opacity: .7;
 }
 
-.learn-not-found button {
-  margin-top: 8px;
-  padding: 10px 18px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--green);
-  min-height: 44px;
+.learn-not-found h2 {
+  margin: 0;
+  font: 800 24px 'Manrope', sans-serif;
 }
+
+.learn-not-found p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 440px;
+}
+
 
 /* ── Desktop overrides for Learn / Safety Centre ───────────────── */
 @media (min-width: 768px) {

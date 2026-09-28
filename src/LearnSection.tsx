@@ -82,18 +82,31 @@ function BlockRenderer({ block }: { block: Block }) {
 }
 
 // ── Article view ─────────────────────────────────────────────────
-interface ArticleViewProps {
+export interface ArticleViewProps {
   slug: string
   onBack: () => void
   onOpenTool: (tool: string) => void
 }
 
-function ArticleView({ slug, onBack, onOpenTool }: ArticleViewProps) {
+export function ArticleView({ slug, onBack, onOpenTool }: ArticleViewProps) {
   const article = getArticleBySlug(slug)
   const related = getRelatedArticles(slug)
   const [pidginOpen, setPidginOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const meta = article ? CATEGORY_META[article.category] : null
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    const prevTitle = document.title
+    if (article) {
+      document.title = `${article.title} — SabiSafe`
+    } else {
+      document.title = 'Article Not Found — SabiSafe'
+    }
+    return () => {
+      document.title = prevTitle
+    }
+  }, [slug, article])
 
   const share = async () => {
     const url = window.location.href.split('#')[0] + '#/learn/' + slug
@@ -110,95 +123,117 @@ function ArticleView({ slug, onBack, onOpenTool }: ArticleViewProps) {
 
   if (!article || !meta) {
     return (
-      <div className="learn-not-found">
-        <ShieldCheck size={40} />
-        <strong>Article not found</strong>
-        <button onClick={onBack}>Back to Learn</button>
-      </div>
+      <main className="article-page-wrap">
+        <div className="learn-not-found">
+          <ShieldCheck size={48} />
+          <h2>Article not found</h2>
+          <p>The safety guide you are looking for doesn't exist or has been moved.</p>
+          <button className="article-back" onClick={onBack}>
+            <ArrowLeft size={16} /> Back to Safety Centre
+          </button>
+        </div>
+      </main>
     )
   }
 
   const CatIcon = meta.icon
 
   return (
-    <article className="article-view">
-      <ReadingProgressBar />
-      <header className="article-header">
-        <button className="article-back" onClick={onBack} aria-label="Back to articles">
-          <ArrowLeft size={18} /> Back
-        </button>
-        <button className="article-share" onClick={() => void share()}>
-          {copied ? <><Check size={15} /> Copied</> : <><Share2 size={15} /> Share</>}
-        </button>
-      </header>
+    <main className="article-page-wrap">
+      <article className="article-view">
+        <ReadingProgressBar />
 
-      <div className="article-hero">
-        <div className="article-cat-tag" style={{ color: meta.colour, background: meta.bg }}>
-          <CatIcon size={12} />
-          {article.category}
-        </div>
-        <h1 className="article-title">{article.title}</h1>
-        <div className="article-meta">
-          <span><Clock size={13} /> {article.readMinutes} min read</span>
-          <span>{new Date(article.publishedAt).toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        {/* Breadcrumbs */}
+        <nav className="article-breadcrumbs" aria-label="Breadcrumb">
+          <button className="breadcrumb-link" onClick={onBack}>
+            Safety centre
+          </button>
+          <ChevronRight size={13} className="breadcrumb-sep" />
+          <span className="breadcrumb-cat">{article.category}</span>
+          <ChevronRight size={13} className="breadcrumb-sep" />
+          <span className="breadcrumb-current">{article.title}</span>
+        </nav>
+
+        {/* Header actions */}
+        <header className="article-header">
+          <button className="article-back" onClick={onBack} aria-label="Back to Safety Centre">
+            <ArrowLeft size={16} /> Back to Safety Centre
+          </button>
+          <button className="article-share" onClick={() => void share()}>
+            {copied ? <><Check size={15} /> Copied</> : <><Share2 size={15} /> Share</>}
+          </button>
+        </header>
+
+        {/* Article hero (sitting directly on page, no big bordered box) */}
+        <div className="article-hero">
+          <div className="article-cat-tag" style={{ color: meta.colour, background: meta.bg }}>
+            <CatIcon size={12} />
+            {article.category}
+          </div>
+          <h1 className="article-title">{article.title}</h1>
+          <div className="article-meta">
+            <span><Clock size={13} /> {article.readMinutes} min read</span>
+            <span>{new Date(article.publishedAt).toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          </div>
+
+          <button
+            className={'pidgin-toggle' + (pidginOpen ? ' open' : '')}
+            onClick={() => setPidginOpen((v) => !v)}
+            aria-expanded={pidginOpen}
+          >
+            <span>Short version in Pidgin</span>
+            <ChevronRight size={15} className="pidgin-chevron" />
+          </button>
+          {pidginOpen && (
+            <div className="pidgin-box">
+              <p>{article.pidginSummary}</p>
+            </div>
+          )}
         </div>
 
-        <button
-          className={'pidgin-toggle' + (pidginOpen ? ' open' : '')}
-          onClick={() => setPidginOpen((v) => !v)}
-          aria-expanded={pidginOpen}
-        >
-          <span>Short version in Pidgin</span>
-          <ChevronRight size={15} className="pidgin-chevron" />
-        </button>
-        {pidginOpen && (
-          <div className="pidgin-box">
-            <p>{article.pidginSummary}</p>
+        {/* Article body */}
+        <div className="article-body">
+          {article.body.map((block, i) => <BlockRenderer key={i} block={block} />)}
+        </div>
+
+        {/* Try it yourself */}
+        <div className="article-try-card">
+          <span className="try-icon"><ShieldCheck size={22} /></span>
+          <div>
+            <strong>Try it yourself</strong>
+            <p>Paste a real example into SabiSafe and see the evidence analysis in seconds.</p>
+          </div>
+          <button className="try-btn" onClick={() => onOpenTool(article.relatedTool)}>
+            Open {TOOL_LABELS[article.relatedTool]} <ArrowRight size={15} />
+          </button>
+        </div>
+
+        {/* Read next */}
+        {related.length > 0 && (
+          <div className="article-read-next">
+            <h3>Read next</h3>
+            <div className="read-next-grid">
+              {related.map((rel) => {
+                const rm = CATEGORY_META[rel.category]
+                const RI = rm.icon
+                return (
+                  <button key={rel.slug} className="read-next-card" onClick={() => {
+                    window.location.hash = '/learn/' + rel.slug
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}>
+                    <div className="rnc-cat" style={{ color: rm.colour, background: rm.bg }}>
+                      <RI size={11} /> {rel.category}
+                    </div>
+                    <strong>{rel.title}</strong>
+                    <span><Clock size={11} /> {rel.readMinutes} min</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
-      </div>
-
-      <div className="article-body">
-        {article.body.map((block, i) => <BlockRenderer key={i} block={block} />)}
-      </div>
-
-      {/* Try it yourself */}
-      <div className="article-try-card">
-        <span className="try-icon"><ShieldCheck size={22} /></span>
-        <div>
-          <strong>Try it yourself</strong>
-          <p>Paste a real example into SabiSafe and see the evidence analysis in seconds.</p>
-        </div>
-        <button className="try-btn" onClick={() => onOpenTool(article.relatedTool)}>
-          Open {TOOL_LABELS[article.relatedTool]} <ArrowRight size={15} />
-        </button>
-      </div>
-
-      {/* Read next */}
-      {related.length > 0 && (
-        <div className="article-read-next">
-          <h3>Read next</h3>
-          <div className="read-next-grid">
-            {related.map((rel) => {
-              const rm = CATEGORY_META[rel.category]
-              const RI = rm.icon
-              return (
-                <button key={rel.slug} className="read-next-card" onClick={() => {
-                  window.location.hash = '/learn/' + rel.slug
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }}>
-                  <div className="rnc-cat" style={{ color: rm.colour, background: rm.bg }}>
-                    <RI size={11} /> {rel.category}
-                  </div>
-                  <strong>{rel.title}</strong>
-                  <span><Clock size={11} /> {rel.readMinutes} min</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </article>
+      </article>
+    </main>
   )
 }
 
@@ -340,58 +375,14 @@ function LearnList({ onOpenArticle, onCheck }: LearnListProps) {
 }
 
 // ── Main export ─────────────────────────────────────────────────
-// Reads the hash to determine list vs article view.
-// Hash format: #/learn/<slug>  → article view
-// Anything else                → list view
-
 export interface LearnSectionProps {
   onOpenTool?: (tool: string) => void
   onCheck?: () => void
 }
 
-export function LearnSection({ onOpenTool, onCheck }: LearnSectionProps) {
-  const [slug, setSlug] = useState<string | null>(() => {
-    const h = window.location.hash
-    const m = h.match(/^#\/learn\/(.+)$/)
-    return m ? m[1] : null
-  })
-  // Restore list scroll position when navigating back
-  const listScrollRef = useRef(0)
-
-  const openArticle = (nextSlug: string) => {
-    listScrollRef.current = window.scrollY
-    window.location.hash = '/learn/' + nextSlug
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    setSlug(nextSlug)
-  }
-
-  const goBack = () => {
-    window.location.hash = ''
-    setSlug(null)
-    requestAnimationFrame(() => window.scrollTo({ top: listScrollRef.current, behavior: 'smooth' }))
-  }
-
-  // Sync slug with hash changes (browser back/forward)
-  useEffect(() => {
-    const onHashChange = () => {
-      const m = window.location.hash.match(/^#\/learn\/(.+)$/)
-      setSlug(m ? m[1] : null)
-    }
-    window.addEventListener('hashchange', onHashChange)
-    return () => window.removeEventListener('hashchange', onHashChange)
-  }, [])
-
-  if (slug) {
-    return (
-      <ArticleView
-        slug={slug}
-        onBack={goBack}
-        onOpenTool={(tool) => {
-          goBack()
-          onOpenTool?.(tool)
-        }}
-      />
-    )
+export function LearnSection({ onCheck }: LearnSectionProps) {
+  const openArticle = (slug: string) => {
+    window.location.hash = '/learn/' + slug
   }
 
   return (
@@ -402,5 +393,4 @@ export function LearnSection({ onOpenTool, onCheck }: LearnSectionProps) {
   )
 }
 
-// Legacy export — used by desktop SafetyCentre slot
 export default LearnSection
