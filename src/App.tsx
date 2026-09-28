@@ -138,10 +138,12 @@ function MessagePanel({ loading, onResult }: PanelProps) {
 
 async function extractImageText(file: File, onProgress: (message: string) => void): Promise<string> {
   const { recognize } = await import('tesseract.js')
-  const { data } = await recognize(file, 'eng', { logger: (event) => {
-    const percent = event.progress ? ` ${Math.round(event.progress * 100)}%` : ''
-    onProgress(`${event.status.replace(/_/g, ' ')}${percent}`)
-  } })
+  const { data } = await recognize(file, 'eng', {
+    logger: (event) => {
+      const percent = event.progress ? ` ${Math.round(event.progress * 100)}%` : ''
+      onProgress(`${event.status.replace(/_/g, ' ')}${percent}`)
+    }
+  })
   return data.text.trim()
 }
 
@@ -264,11 +266,13 @@ function PaymentPanel({ loading, onResult }: PanelProps) {
   const imageRef = useRef<HTMLInputElement>(null)
   const [value, setValue] = useState('')
   const [amount, setAmount] = useState('')
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [ocrStatus, setOcrStatus] = useState('')
   const [ocrLoading, setOcrLoading] = useState(false)
 
   const readReceipt = async (file?: File) => {
     if (!file) return
+    setReceiptFile(file)
     setOcrLoading(true)
     setOcrStatus('Reading receipt…')
     try {
@@ -283,14 +287,85 @@ function PaymentPanel({ loading, onResult }: PanelProps) {
   }
 
   return <>
-    <div className="payment-grid">
-      <div><label className="field-label" htmlFor="expected-amount">Expected amount <span>Optional</span></label><div className="single-input"><Banknote size={19} /><span className="currency">₦</span><input id="expected-amount" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value.replace(/[^\d.]/g, ''))} placeholder="45,000" /></div></div>
-      <div><label className="field-label" htmlFor="receipt-image">Receipt image <span>Optional</span></label><button className="receipt-upload" onClick={() => imageRef.current?.click()}><Upload size={17} /> Upload receipt</button><input id="receipt-image" ref={imageRef} hidden type="file" accept="image/*" onChange={(event) => readReceipt(event.target.files?.[0])} /></div>
+    {/* Amount row */}
+    <div className="payment-amount-row">
+      <label className="payment-field-label" htmlFor="expected-amount">
+        <span className="payment-label-text">Expected amount</span>
+        <span className="payment-label-opt">Optional</span>
+      </label>
+      <div className="payment-amount-input">
+        <span className="payment-amount-icon"><Banknote size={18} /></span>
+        <span className="payment-currency">₦</span>
+        <input
+          id="expected-amount"
+          inputMode="decimal"
+          value={amount}
+          onChange={(event) => setAmount(event.target.value.replace(/[^\d.]/g, ''))}
+          placeholder="0.00"
+        />
+        {amount && <span className="payment-amount-badge">set</span>}
+      </div>
     </div>
-    {ocrStatus && <div className="status-note">{ocrLoading ? <LoaderCircle className="spin" size={15} /> : <ReceiptText size={15} />}{ocrStatus}</div>}
-    <TextArea value={value} setValue={setValue} label="Payment evidence" placeholder="Paste the payment alert, receipt text, or buyer’s message…" />
-    <div className="input-helper"><button onClick={() => { setValue(PAYMENT_EXAMPLE); setAmount('50000') }}><Sparkles size={15} /> Load fake payment example</button><span>Always confirm inside your own bank app</span></div>
-    <PrimaryButton disabled={!value.trim() || loading || ocrLoading} onClick={() => onResult({ analysis: analysePayment(value, amount ? Number(amount) : undefined), mode: 'payment' })}>Verify payment evidence <ArrowRight size={18} /></PrimaryButton>
+
+    {/* Receipt upload */}
+    <div className="payment-receipt-row">
+      <label className="payment-field-label" htmlFor="receipt-image">
+        <span className="payment-label-text">Receipt image</span>
+        <span className="payment-label-opt">Optional</span>
+      </label>
+      <button
+        className={`payment-receipt-zone${receiptFile ? ' has-file' : ''}`}
+        onClick={() => imageRef.current?.click()}
+        aria-label="Upload receipt image"
+      >
+        <span className="payment-receipt-icon">
+          {ocrLoading ? <LoaderCircle className="spin" size={20} /> : <Upload size={20} />}
+        </span>
+        <span className="payment-receipt-text">
+          <strong>{receiptFile ? receiptFile.name : 'Upload receipt'}</strong>
+          <small>{receiptFile ? 'Tap to replace' : 'PNG, JPG or WEBP'}</small>
+        </span>
+        {receiptFile && <span className="payment-receipt-check"><Check size={14} /></span>}
+      </button>
+      <input id="receipt-image" ref={imageRef} hidden type="file" accept="image/*" onChange={(event) => readReceipt(event.target.files?.[0])} />
+    </div>
+
+    {ocrStatus && (
+      <div className={`status-note${ocrLoading ? '' : value ? ' success' : ''}`}>
+        {ocrLoading ? <LoaderCircle className="spin" size={15} /> : <ReceiptText size={15} />}
+        {ocrStatus}
+      </div>
+    )}
+
+    {/* Evidence textarea */}
+    <div className="payment-evidence-row">
+      <label className="payment-field-label" htmlFor="text-Payment evidence">
+        <span className="payment-label-text">Payment alert or message</span>
+      </label>
+      <TextArea value={value} setValue={setValue} label="Payment evidence" placeholder="Paste the payment alert, receipt text, or buyer's message…" />
+    </div>
+
+    {/* Helper + action */}
+    <div className="payment-actions-row">
+      <button className="payment-example-btn" onClick={() => { setValue(PAYMENT_EXAMPLE); setAmount('50000') }}>
+        <Sparkles size={14} />
+        Load fake payment example
+      </button>
+      <span className="payment-warning-note">
+        <ShieldCheck size={12} />
+        Always confirm inside your own bank app
+      </span>
+    </div>
+
+    <button
+      className="payment-verify-btn"
+      disabled={!value.trim() || loading || ocrLoading}
+      onClick={() => onResult({ analysis: analysePayment(value, amount ? Number(amount) : undefined), mode: 'payment' })}
+    >
+      {loading ? <LoaderCircle className="spin" size={18} /> : <WalletCards size={18} />}
+      Verify payment evidence
+      <ArrowRight size={18} className="payment-btn-arrow" />
+    </button>
   </>
 }
 
@@ -535,9 +610,9 @@ function AccountSheet({ account, syncState, historyCount, onClose, onEditPrefere
           <label><span>Password</span><div><LockKeyhole /><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} placeholder="At least 8 characters" /></div></label>
           {message && <p className="auth-message">{message}</p>}
           <button className="auth-submit" disabled={submitting || account.loading} onClick={() => void submit()}>{submitting ? <LoaderCircle className="spin" /> : mode === 'login' ? <LogIn /> : <UserRound />}{mode === 'login' ? 'Log in securely' : 'Create my account'}</button>
-          
+
           <div className="auth-divider"><span>or</span></div>
-          <button className="auth-google" onClick={() => void account.signInWithGoogle()}><svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Continue with Google</button>
+          <button className="auth-google" onClick={() => void account.signInWithGoogle()}><svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg>Continue with Google</button>
 
           <small className="auth-privacy"><LockKeyhole /> Authentication is secured by Supabase.</small>
         </div>
@@ -604,7 +679,7 @@ function DesktopLanding({ onStart }: { onStart: (guard?: GuardKind) => void }) {
 function DesktopDashboard({ initialGuard, presented, onResult, onClearResult, historyEnabled, setHistoryEnabled, history, setHistory, accountBacked, onClearHistory }: { initialGuard: GuardKind; presented: PresentedResult | null; onResult: (result: PresentedResult) => void; onClearResult: () => void; historyEnabled: boolean; setHistoryEnabled: Dispatch<SetStateAction<boolean>>; history: SavedCheck[]; setHistory: Dispatch<SetStateAction<SavedCheck[]>>; accountBacked: boolean; onClearHistory: () => void }) {
   return <main className="desktop-dashboard">
     <section className="dashboard-welcome"><div><span className="section-kicker">YOUR SAFETY DASHBOARD</span><h1>Check it before you trust it.</h1><p>Choose a guard, review the evidence, and take a safer next step.</p></div><div className="dashboard-orb"><ShieldCheck /></div></section>
-    
+
     {!presented ? (
       <GuardWorkspace key={initialGuard} initialMode={initialGuard} onResult={onResult} />
     ) : (
