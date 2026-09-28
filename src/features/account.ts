@@ -8,6 +8,7 @@ export interface AccountState {
   user: User | null
   signIn: (email: string, password: string) => Promise<string | null>
   signUp: (name: string, email: string, password: string) => Promise<string | null>
+  signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -41,7 +42,15 @@ export function useAccount(): AccountState {
     return data.session ? null : 'Check your email to confirm your account, then log in.'
   }
 
+  const signInWithGoogle = async () => {
+    if (!supabase) return
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    })
+  }
+
   const signOut = async () => { if (supabase) await supabase.auth.signOut() }
 
-  return { configured: isSupabaseConfigured, loading, user, signIn, signUp, signOut }
+  return { configured: isSupabaseConfigured, loading, user, signIn, signUp, signInWithGoogle, signOut }
 }
