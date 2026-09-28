@@ -294,7 +294,20 @@ function PaymentPanel({ loading, onResult }: PanelProps) {
   </>
 }
 
-function GuardWorkspace({ onResult, initialMode = 'message', mobile = false, onNavigateGuard }: { onResult: (result: PresentedResult) => void; initialMode?: GuardKind; mobile?: boolean; onNavigateGuard?: (guard: GuardKind) => void }) {
+function GuardList({ onSelect }: { onSelect: (guard: GuardKind) => void }) {
+  return <section className="guard-list" aria-label="Choose a protection tool">
+    <div className="guard-list-header"><span>PROTECTION TOOLS</span><h2>What do you want to check?</h2><p>Choose a tool below to get started.</p></div>
+    <div className="guard-list-items">
+      {GUARDS.map((guard) => <button key={guard.id} className="guard-list-item" onClick={() => onSelect(guard.id)}>
+        <span className="guard-list-icon"><guard.icon size={20} /></span>
+        <div className="guard-list-text"><strong>{guard.label}</strong><small>{guard.hint}</small></div>
+        <ChevronRight size={18} className="guard-list-arrow" />
+      </button>)}
+    </div>
+  </section>
+}
+
+function GuardWorkspace({ onResult, initialMode = 'message', mobile = false }: { onResult: (result: PresentedResult) => void; initialMode?: GuardKind; mobile?: boolean }) {
   const [mode, setMode] = useState<GuardKind>(initialMode)
   const [loading, setLoading] = useState(false)
   const active = GUARDS.find((guard) => guard.id === mode) ?? GUARDS[0]!
@@ -308,16 +321,8 @@ function GuardWorkspace({ onResult, initialMode = 'message', mobile = false, onN
     }, 350)
   }
 
-  const handleModeChange = (guardId: GuardKind) => {
-    if (mobile && onNavigateGuard && guardId !== mode) {
-      onNavigateGuard(guardId)
-    } else {
-      setMode(guardId)
-    }
-  }
-
   return <section id="check" className={mobile ? 'workspace mobile-workspace' : 'workspace'} aria-label="SabiSafe protection tools">
-    <ModeTabs mode={mode} setMode={handleModeChange} />
+    {!mobile && <ModeTabs mode={mode} setMode={setMode} />}
     <div className="workspace-body">
       <div className="workspace-heading"><span className="mini-icon"><active.icon size={21} /></span><div><small>{active.label}</small><h2>{active.title}</h2><p>{active.hint}</p></div></div>
       {mode === 'message' && <MessagePanel loading={loading} onResult={deliver} />}
@@ -552,7 +557,6 @@ function MobileDashboard({ account, syncState, preferences, historyEnabled, setH
   const changeView = (next: MobileView) => {
     setView(next)
     if (next !== 'check') setActiveGuard(null)
-    if (next === 'check' && !activeGuard) setActiveGuard('message')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -567,7 +571,8 @@ function MobileDashboard({ account, syncState, preferences, historyEnabled, setH
         <section className="mobile-recent"><div className="mobile-section-title"><div><span>{account.user ? 'YOUR ACCOUNT' : 'ON THIS DEVICE'}</span><h2>Recent checks</h2></div><button onClick={() => changeView('history')}>View all</button></div>{historyEnabled && history[0] ? <article><span className={`history-score ${history[0].level.toLowerCase().replace(' ', '-')}`}>{history[0].score}</span><div><small>{history[0].mode}</small><strong>{history[0].scamType}</strong><p>{history[0].preview}</p></div></article> : <div className="mobile-empty"><History /><span><strong>{historyEnabled ? 'Your next check will appear here' : 'History is off'}</strong><small>{historyEnabled ? account.user ? 'Synced securely to your account.' : 'Saved only on this device.' : 'Turn it on from your preferences.'}</small></span></div>}</section>
         <aside className="daily-tip"><span><BookOpen /></span><div><small>SAFETY NOTE</small><strong>A screenshot is not a payment.</strong><p>Confirm the balance inside your own bank app.</p></div></aside>
       </>}
-      {view === 'check' && activeGuard && <div className="mobile-tool-view"><button className="mobile-back" onClick={() => { setActiveGuard(null); setView('home'); onClearResult() }}><ArrowLeft /> Back to home</button><GuardWorkspace key={activeGuard} initialMode={activeGuard} mobile onResult={onResult} onNavigateGuard={openGuard} /><ResultView presented={presented} defaultLanguage={preferences.language} onReset={() => { onClearResult(); setActiveGuard(null); setView('home') }} /></div>}
+      {view === 'check' && !activeGuard && <GuardList onSelect={openGuard} />}
+      {view === 'check' && activeGuard && <div className="mobile-tool-view"><button className="mobile-back" onClick={() => { setActiveGuard(null); onClearResult() }}><ArrowLeft /> Back to tools</button><GuardWorkspace key={activeGuard} initialMode={activeGuard} mobile onResult={onResult} /><ResultView presented={presented} defaultLanguage={preferences.language} onReset={() => { onClearResult(); setActiveGuard(null) }} /></div>}
       {view === 'history' && <HistorySection enabled={historyEnabled} setEnabled={setHistoryEnabled} history={history} setHistory={setHistory} accountBacked={Boolean(account.user)} onClear={onClearHistory} />}
       {view === 'learn' && <SafetyCentre onCheck={() => openGuard('message')} />}
     </main>
