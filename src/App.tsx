@@ -9,6 +9,7 @@ import {
   ShieldCheck, Sparkles, Trash2, Upload, UserRound, Volume2, WalletCards, X,
 } from 'lucide-react'
 import { analysePayment, analyseText, highlightMessage } from './engine'
+import { LearnSection } from './LearnSection'
 import type { AnalysisResult, ExplanationLanguage } from './engine'
 import { clearHistory, loadHistory, saveCheck } from './features/history'
 import type { GuardKind, SavedCheck } from './features/history'
@@ -661,7 +662,7 @@ function MobileDashboard({ account, syncState, preferences, historyEnabled, setH
         </>}
       </div>}
       {view === 'history' && <HistorySection enabled={historyEnabled} setEnabled={setHistoryEnabled} history={history} setHistory={setHistory} accountBacked={Boolean(account.user)} onClear={onClearHistory} />}
-      {view === 'learn' && <SafetyCentre onCheck={() => openGuard('message')} />}
+      {view === 'learn' && <LearnSection onOpenTool={(tool) => openGuard(tool as Parameters<typeof openGuard>[0])} onCheck={() => openGuard('message')} />}
     </main>
     <MobileNavigation view={view} onChange={changeView} />
     {accountOpen && <AccountSheet account={account} syncState={syncState} historyCount={history.length} onClose={() => setAccountOpen(false)} onEditPreferences={onEditPreferences} />}
@@ -672,7 +673,7 @@ function DesktopLanding({ onStart }: { onStart: (guard?: GuardKind) => void }) {
   return <main>
     <section className="hero"><div className="hero-copy"><span className="eyebrow"><ShieldCheck size={14} /> Built for Nigerian scam patterns</span><h1>One place to check the whole scam story</h1><p>Analyse the message, screenshot, link, call, or payment proof. SabiSafe shows the evidence, explains the tactic, and helps you choose a safer next action.</p><div className="hero-points"><span><Check /> No account required</span><span><Check /> English and Pidgin</span><span><Check /> Local-first processing</span></div><button className="hero-cta border border-white/30 bg-gradient-to-br from-brand-500/95 to-brand-700/90 shadow-glass backdrop-blur-xl hover:from-brand-600 hover:to-brand-700" onClick={() => onStart()}>Open your safety dashboard <ArrowRight size={18} /></button></div><div className="hero-visual"><div className="hero-orb"><ShieldCheck /></div><div className="signal-card main"><span><AlertTriangle /></span><small>Pattern detected</small><strong>Urgency plus OTP request</strong><p>Two tactics reinforce each other</p></div><div className="signal-card floating top"><Link2 /><span><strong>Domain mismatch</strong><small>Not the claimed bank</small></span></div><div className="signal-card floating bottom"><Languages /><span><strong>Explain am simply</strong><small>English or Pidgin</small></span></div></div></section>
     <section className="tool-strip" aria-label="Available protection tools">{GUARDS.map((guard) => <button key={guard.id} onClick={() => onStart(guard.id)}><guard.icon /><span><strong>{guard.shortLabel}</strong><small>{guard.id === 'call' ? 'Local AI transcript' : guard.id === 'payment' ? 'Receipt checks' : 'Evidence checks'}</small></span></button>)}</section>
-    <SafetyCentre onCheck={() => onStart()} />
+    <LearnSection onOpenTool={(tool) => onStart(tool as Parameters<typeof onStart>[0])} onCheck={() => onStart()} />
   </main>
 }
 
@@ -690,7 +691,7 @@ function DesktopDashboard({ initialGuard, presented, onResult, onClearResult, hi
     )}
 
     <HistorySection enabled={historyEnabled} setEnabled={setHistoryEnabled} history={history} setHistory={setHistory} accountBacked={accountBacked} onClear={onClearHistory} />
-    <SafetyCentre />
+    <LearnSection onOpenTool={() => {}} onCheck={() => {}} />
   </main>
 }
 
