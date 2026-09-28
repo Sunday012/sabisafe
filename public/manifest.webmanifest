@@ -1,0 +1,43 @@
+{
+  "id": "/",
+  "name": "SabiSafe — Scam Safety Checker",
+  "short_name": "SabiSafe",
+  "description": "Check suspicious messages, screenshots, links, calls, and payment evidence before you act.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#f6f8f3",
+  "theme_color": "#5362d8",
+  "lang": "en-NG",
+  "categories": ["security", "utilities", "education"],
+  "icons": [
+    {
+      "src": "/icons/sabisafe-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/sabisafe-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/sabisafe-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Check something",
+      "short_name": "New check",
+      "description": "Open the SabiSafe protection tools",
+      "url": "/#check",
+      "icons": [{ "src": "/icons/sabisafe-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

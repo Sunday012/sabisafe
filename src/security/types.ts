@@ -1,5 +1,5 @@
 export type Severity = 'medium' | 'high' | 'critical'
-export type EvidenceSource = 'message-language' | 'url-intelligence'
+export type EvidenceSource = 'message-language' | 'url-intelligence' | 'payment-intelligence'
 export type RiskLevel = 'Low risk' | 'Medium risk' | 'High risk'
 export type ExplanationLanguage = 'english' | 'pidgin'
 
@@ -57,4 +57,5 @@ export interface FraudAnalysisInput {
   text: string
   claimedBrand?: string
   now?: () => Date
+  additionalEvidence?: Evidence[]
 }

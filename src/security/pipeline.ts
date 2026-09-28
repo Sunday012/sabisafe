@@ -1,7 +1,7 @@
 import { detectMessageSignals } from './signals'
 import { inspectUrls } from './url-intelligence'
 import { classifyRisk, estimateConfidence, inferScamType, scoreEvidence } from './risk-policy'
-import type { AnalysisResult, ExplanationLanguage, FraudAnalysisInput } from './types'
+import type { AnalysisResult, EvidenceSource, ExplanationLanguage, FraudAnalysisInput } from './types'
 
 const GUIDANCE: Record<'high' | 'medium' | 'low', Record<ExplanationLanguage, string>> = {
   high: { english: 'This looks dangerous. Do not click any link, send money, or share personal details. Contact the organisation using its official app, website, or phone number.', pidgin: 'This one get serious red flags. No click any link, send money, or share your private details. Contact the organisation with their correct app or number.' },
@@ -15,11 +15,11 @@ const riskKey = (score: number): 'high' | 'medium' | 'low' => score >= 65 ? 'hig
  * Explainable detection pipeline. Each stage returns facts; the trace keeps
  * every score contribution observable to the UI, tests, and auditors.
  */
-export function runFraudAnalysis({ text, claimedBrand = '', now = () => new Date() }: FraudAnalysisInput): AnalysisResult {
+export function runFraudAnalysis({ text, claimedBrand = '', now = () => new Date(), additionalEvidence = [] }: FraudAnalysisInput): AnalysisResult {
   const normalizedText = String(text || '').trim()
   const messageEvidence = detectMessageSignals(normalizedText)
   const urls = inspectUrls(normalizedText, claimedBrand)
-  const evidence = [...messageEvidence, ...urls.flatMap((url) => url.evidence)]
+  const evidence = [...messageEvidence, ...urls.flatMap((url) => url.evidence), ...additionalEvidence]
   const scoring = scoreEvidence(evidence, Boolean(normalizedText))
   const guidance = GUIDANCE[riskKey(scoring.score)]
   return {
@@ -33,6 +33,12 @@ export function runFraudAnalysis({ text, claimedBrand = '', now = () => new Date
     pidgin: guidance.pidgin,
     text: normalizedText,
     analysedAt: now().toISOString(),
-    trace: { basePoints: scoring.basePoints, interactionPoints: scoring.interactionPoints, interactions: scoring.interactions, detectorsRun: ['message-language', 'url-intelligence'], policyVersion: '2026.09' },
+    trace: {
+      basePoints: scoring.basePoints,
+      interactionPoints: scoring.interactionPoints,
+      interactions: scoring.interactions,
+      detectorsRun: [...new Set<EvidenceSource>(['message-language', 'url-intelligence', ...additionalEvidence.map((item) => item.source)])],
+      policyVersion: '2026.10',
+    },
   }
 }

@@ -33,6 +33,7 @@ export const classifyRisk = (score: number): RiskLevel => score >= 65 ? 'High ri
 
 export function inferScamType(evidence: Evidence[], score: number): string {
   const ids = new Set(evidence.map((item) => item.id))
+  if ([...ids].some((id) => id.startsWith('payment-'))) return 'Suspicious payment proof'
   if (ids.has('secrets') && evidence.some((item) => item.source === 'url-intelligence')) return 'Bank impersonation / phishing'
   if (ids.has('reward')) return 'Prize or investment scam'
   if (ids.has('money')) return 'Payment scam'

@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+import { analysePayment } from '../src/engine'
 import { runFraudAnalysis } from '../src/security/pipeline'
 
 const fixedNow = () => new Date('2026-09-25T12:00:00.000Z')
@@ -11,7 +12,7 @@ test('corroborates language and URL evidence without claiming certainty', () => 
   expect(result.evidence.some((item) => item.id === 'secrets')).toBe(true)
   expect(result.evidence.some((item) => item.title === 'Brand and domain mismatch')).toBe(true)
   expect(result.trace.interactions.some((item) => item.id === 'credential-phishing')).toBe(true)
-  expect(result.trace.policyVersion).toBe('2026.09')
+  expect(result.trace.policyVersion).toBe('2026.10')
 })
 
 test('does not treat a trusted subdomain as a brand mismatch', () => {
@@ -33,4 +34,20 @@ test('keeps benign text above zero to express residual uncertainty', () => {
   expect(result.score).toBe(8)
   expect(result.level).toBe('Low risk')
   expect(result.evidence).toHaveLength(0)
+})
+
+test('corroborates pending payment, release pressure, and amount mismatch', () => {
+  const result = analysePayment(
+    'Proof of payment: NGN 45,000. Status: processing. Release the goods immediately before the alert reflects.',
+    50000,
+  )
+
+  expect(result.level).toBe('High risk')
+  expect(result.scamType).toBe('Suspicious payment proof')
+  expect(result.evidence.map((item) => item.id)).toEqual(expect.arrayContaining([
+    'payment-pending',
+    'payment-release-pressure',
+    'payment-amount-mismatch',
+  ]))
+  expect(result.trace.detectorsRun).toContain('payment-intelligence')
 })

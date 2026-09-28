@@ -1,5 +1,6 @@
 import { runFraudAnalysis } from './security/pipeline'
 import { MESSAGE_SIGNALS } from './security/signals'
+import { inspectPaymentEvidence } from './security/payment-intelligence'
 import type { AnalysisResult, Evidence } from './security/types'
 
 export type { AnalysisResult, Evidence, ExplanationLanguage } from './security/types'
@@ -13,6 +14,10 @@ export interface HighlightedPart {
 /** Public adapter retained for the UI and future API consumers. */
 export function analyseText(text: string, claimedBrand = ''): AnalysisResult {
   return runFraudAnalysis({ text, claimedBrand })
+}
+
+export function analysePayment(text: string, expectedAmount?: number): AnalysisResult {
+  return runFraudAnalysis({ text, additionalEvidence: inspectPaymentEvidence(text, { expectedAmount }) })
 }
 
 export function highlightMessage(text: string, evidence: Evidence[]): HighlightedPart[] {
