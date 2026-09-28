@@ -576,7 +576,15 @@ function MobileDashboard({ account, syncState, preferences, historyEnabled, setH
         <aside className="daily-tip"><span><BookOpen /></span><div><small>SAFETY NOTE</small><strong>A screenshot is not a payment.</strong><p>Confirm the balance inside your own bank app.</p></div></aside>
       </>}
       {view === 'check' && !activeGuard && <GuardList onSelect={openGuard} />}
-      {view === 'check' && activeGuard && <div className="mobile-tool-view"><button className="mobile-back" onClick={() => { setActiveGuard(null); onClearResult() }}><ArrowLeft /> Back to tools</button><GuardWorkspace key={activeGuard} initialMode={activeGuard} mobile onResult={onResult} /><ResultView presented={presented} defaultLanguage={preferences.language} onReset={() => { onClearResult(); setActiveGuard(null) }} /></div>}
+      {view === 'check' && activeGuard && <div className="mobile-tool-view">
+        {!presented ? <>
+          <button className="mobile-back" onClick={() => { setActiveGuard(null); onClearResult() }}><ArrowLeft /> Back to tools</button>
+          <GuardWorkspace key={activeGuard} initialMode={activeGuard} mobile onResult={onResult} />
+        </> : <>
+          <button className="mobile-back" onClick={onClearResult}><ArrowLeft /> Back to input</button>
+          <ResultView presented={presented} defaultLanguage={preferences.language} onReset={() => { onClearResult(); setActiveGuard(null) }} />
+        </>}
+      </div>}
       {view === 'history' && <HistorySection enabled={historyEnabled} setEnabled={setHistoryEnabled} history={history} setHistory={setHistory} accountBacked={Boolean(account.user)} onClear={onClearHistory} />}
       {view === 'learn' && <SafetyCentre onCheck={() => openGuard('message')} />}
     </main>
@@ -594,7 +602,21 @@ function DesktopLanding({ onStart }: { onStart: (guard?: GuardKind) => void }) {
 }
 
 function DesktopDashboard({ initialGuard, presented, onResult, onClearResult, historyEnabled, setHistoryEnabled, history, setHistory, accountBacked, onClearHistory }: { initialGuard: GuardKind; presented: PresentedResult | null; onResult: (result: PresentedResult) => void; onClearResult: () => void; historyEnabled: boolean; setHistoryEnabled: Dispatch<SetStateAction<boolean>>; history: SavedCheck[]; setHistory: Dispatch<SetStateAction<SavedCheck[]>>; accountBacked: boolean; onClearHistory: () => void }) {
-  return <main className="desktop-dashboard"><section className="dashboard-welcome"><div><span className="section-kicker">YOUR SAFETY DASHBOARD</span><h1>Check it before you trust it.</h1><p>Choose a guard, review the evidence, and take a safer next step.</p></div><div className="dashboard-orb"><ShieldCheck /></div></section><GuardWorkspace key={initialGuard} initialMode={initialGuard} onResult={onResult} /><ResultView presented={presented} onReset={onClearResult} /><HistorySection enabled={historyEnabled} setEnabled={setHistoryEnabled} history={history} setHistory={setHistory} accountBacked={accountBacked} onClear={onClearHistory} /><SafetyCentre /></main>
+  return <main className="desktop-dashboard">
+    <section className="dashboard-welcome"><div><span className="section-kicker">YOUR SAFETY DASHBOARD</span><h1>Check it before you trust it.</h1><p>Choose a guard, review the evidence, and take a safer next step.</p></div><div className="dashboard-orb"><ShieldCheck /></div></section>
+    
+    {!presented ? (
+      <GuardWorkspace key={initialGuard} initialMode={initialGuard} onResult={onResult} />
+    ) : (
+      <div className="desktop-result-screen">
+        <button className="desktop-back" onClick={onClearResult}><ArrowLeft size={16} /> Back to input</button>
+        <ResultView presented={presented} onReset={onClearResult} />
+      </div>
+    )}
+
+    <HistorySection enabled={historyEnabled} setEnabled={setHistoryEnabled} history={history} setHistory={setHistory} accountBacked={accountBacked} onClear={onClearHistory} />
+    <SafetyCentre />
+  </main>
 }
 
 export default function App() {
