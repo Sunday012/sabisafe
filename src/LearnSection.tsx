@@ -1,6 +1,6 @@
 // LearnSection: blog-style safety education
 // Rendered into mobile Learn tab and desktop SafetyCentre replacement
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AlertTriangle, ArrowLeft, ArrowRight, BookOpen, Check,
   ChevronRight, Clock, ExternalLink, Filter,

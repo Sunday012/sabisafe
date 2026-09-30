@@ -4,4 +4,6 @@ dist/
 *.local
 *.log
 .intersync/
+.deck-build/
+.codex-finalizer/
 .env

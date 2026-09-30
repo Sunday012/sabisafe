@@ -24,6 +24,32 @@ Choose **Message Guard** and click **Load phishing example**, then analyse it. S
 
 The MVP uses a transparent rule-based detection engine, Tesseract.js for in-browser OCR, and Transformers.js with Whisper for local call transcription. No API key is required. OCR and transcription resources must be downloaded before those tools can work offline for the first time.
 
+## Link Guard: local analysis and live inspection
+
+Link Guard works even when the user does not know which company a link is pretending to represent. The **Who does it claim to be?** field is optional; when supplied, SabiSafe also checks whether the destination domain matches that organisation.
+
+Every link first receives the local structural checks in the TypeScript risk pipeline. When the Supabase backend is connected, the `inspect-link` Edge Function adds a restricted live inspection:
+
+- Accepts only public HTTP or HTTPS destinations and blocks local/private network targets.
+- Validates every redirect, follows no more than four, and never executes the destination's JavaScript.
+- Reads at most 128 KB of HTML to report the final domain, response status, HTTPS use, page title, and description.
+- Optionally checks the final URL against Google Cloud Web Risk for known malware, social-engineering, and unwanted-software matches.
+- Treats a clean lookup as one signal, never as a guarantee that a site is legitimate.
+
+Deploy the function after connecting the project:
+
+```bash
+supabase functions deploy inspect-link
+```
+
+For known-threat reputation checks, enable Google Cloud Web Risk and store its API key as an Edge Function secret. Do not put this key in a `VITE_*` variable or ship it to the browser.
+
+```bash
+supabase secrets set GOOGLE_WEB_RISK_API_KEY=your-key
+```
+
+Without the Edge Function, Link Guard still performs its offline structural analysis and explains that live inspection is not connected. Without the Web Risk secret, the function still checks reachability, redirects, HTTPS, and public page identity but does not claim to have checked a reputation list. Google receives the URL when the Web Risk lookup is enabled, so deployments should disclose that in their privacy notice.
+
 ## PWA capabilities
 
 - Installable manifest with standard, Apple touch, and maskable icons

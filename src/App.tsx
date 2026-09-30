@@ -18,6 +18,8 @@ import type { TranscriptChunk, TranscriptionProgress } from './features/transcri
 import { useAccount } from './features/account'
 import type { AccountState } from './features/account'
 import { clearAccountHistory, saveAccountCheck, syncAccountHistory } from './features/account-history'
+import { inspectLinkOnline } from './features/link-verification'
+import type { LiveLinkInspection } from './features/link-verification'
 
 const MESSAGE_EXAMPLE = 'Dear customer, your bank account will be suspended today. Click this link immediately to update your BVN: https://gtbank-secure-update.xyz'
 const CALL_EXAMPLE = "Hello, this is your bank's customer care. Your account will be blocked today. Tell me the OTP we just sent you immediately so I can stop it. Do not contact the branch."
@@ -45,6 +47,7 @@ interface PresentedResult {
   mode: GuardKind
   transcriptChunks?: TranscriptChunk[]
   sourceName?: string
+  linkInspection?: LiveLinkInspection
 }
 
 function BrandMark() {
@@ -188,14 +191,63 @@ function ScreenshotPanel({ loading, onResult }: PanelProps) {
 function LinkPanel({ loading, onResult }: PanelProps) {
   const [value, setValue] = useState('')
   const [brand, setBrand] = useState('')
+  const [inspecting, setInspecting] = useState(false)
+
+  const inspect = async () => {
+    if (!value.trim() || inspecting) return
+    setInspecting(true)
+    const analysis = analyseText(value, brand.trim())
+    const linkInspection = await inspectLinkOnline(value.trim())
+    setInspecting(false)
+    onResult({ analysis, mode: 'link', linkInspection })
+  }
+
   return <>
     <label className="field-label" htmlFor="url">Suspicious link</label>
     <div className="single-input"><Link2 size={19} /><input id="url" value={value} onChange={(event) => setValue(event.target.value)} placeholder="https://secure-bank-update.xyz" /></div>
-    <label className="field-label optional" htmlFor="brand">Claimed organisation <span>Optional</span></label>
-    <div className="single-input"><BadgeCheck size={19} /><input id="brand" value={brand} onChange={(event) => setBrand(event.target.value)} placeholder="e.g. GTBank" /></div>
-    <p className="field-help">Structural checks run locally. No live reputation lookup is claimed.</p>
-    <PrimaryButton disabled={!value.trim() || loading} onClick={() => onResult({ analysis: analyseText(value, brand), mode: 'link' })}>Inspect link <Search size={18} /></PrimaryButton>
+    <label className="field-label optional" htmlFor="brand">Who does it claim to be? <span>Optional</span></label>
+    <div className="single-input"><BadgeCheck size={19} /><input id="brand" value={brand} onChange={(event) => setBrand(event.target.value)} placeholder="e.g. GTBank, Jumia or Netflix" /></div>
+    <p className="field-help">Add the name only if the message claims the link belongs to a company. This helps detect lookalike domains.</p>
+    <PrimaryButton disabled={!value.trim() || loading || inspecting} onClick={() => void inspect()}>{inspecting ? <><LoaderCircle className="spin" size={18} /> Checking destination…</> : <>Inspect link <Search size={18} /></>}</PrimaryButton>
   </>
+}
+
+function LinkInspectionCard({ inspection }: { inspection: LiveLinkInspection }) {
+  const danger = inspection.status === 'threat'
+  const unavailable = inspection.status === 'unavailable' || inspection.status === 'error' || inspection.status === 'unreachable'
+  const title = danger
+    ? 'Known threat match found'
+    : inspection.status === 'clear'
+      ? inspection.reputationChecked ? 'No known threat match found' : 'Destination reached'
+      : inspection.status === 'unreachable' ? 'Destination could not be reached' : 'Online inspection unavailable'
+  const hostname = (() => {
+    try { return inspection.finalUrl ? new URL(inspection.finalUrl).hostname : '' } catch { return '' }
+  })()
+  const tone = danger
+    ? 'border-red-200 bg-red-50/80 text-red-950'
+    : unavailable
+      ? 'border-slate-200 bg-slate-50/80 text-slate-800'
+      : 'border-brand-200 bg-brand-50/70 text-slate-900'
+  const iconTone = danger
+    ? 'bg-red-100 text-red-600'
+    : unavailable ? 'bg-slate-200 text-slate-600' : 'bg-brand-100 text-brand-600'
+
+  return <article className={`my-5 rounded-[1.4rem] border p-5 shadow-sm backdrop-blur-xl sm:p-6 ${tone}`}>
+    <div className="flex items-center gap-3">
+      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${iconTone}`}>{danger || unavailable ? <CircleAlert size={20} /> : <BadgeCheck size={20} />}</span>
+      <div><small className="text-[0.65rem] font-extrabold tracking-[0.16em] text-current opacity-60">LIVE DESTINATION CHECK</small><h3 className="m-0 text-lg font-extrabold">{title}</h3></div>
+    </div>
+    {inspection.message && <p className="mb-0 mt-3 text-sm leading-6 opacity-75">{inspection.message}</p>}
+    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {hostname && <span className="rounded-xl bg-white/70 p-3 text-xs"><strong className="mb-1 block opacity-55">Destination</strong><span className="block truncate font-bold">{hostname}</span></span>}
+      {typeof inspection.httpStatus === 'number' && <span className="rounded-xl bg-white/70 p-3 text-xs"><strong className="mb-1 block opacity-55">Response</strong><span className="font-bold">HTTP {inspection.httpStatus}</span></span>}
+      {inspection.reachable && <span className="rounded-xl bg-white/70 p-3 text-xs"><strong className="mb-1 block opacity-55">Connection</strong><span className="font-bold">{inspection.usesHttps ? 'HTTPS' : 'Not HTTPS'}</span></span>}
+      {typeof inspection.redirectCount === 'number' && <span className="rounded-xl bg-white/70 p-3 text-xs"><strong className="mb-1 block opacity-55">Redirects</strong><span className="font-bold">{inspection.redirectCount}</span></span>}
+    </div>
+    {inspection.pageTitle && <div className="mt-3 rounded-xl bg-white/70 p-3 text-sm"><strong className="mb-1 block text-xs opacity-55">Page title</strong><span className="font-bold">{inspection.pageTitle}</span>{inspection.description && <p className="mb-0 mt-1 text-xs leading-5 opacity-70">{inspection.description}</p>}</div>}
+    {inspection.threatTypes.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{inspection.threatTypes.map((threat) => <span className="rounded-full bg-red-600 px-3 py-1 text-[0.65rem] font-extrabold uppercase tracking-wide text-white" key={threat}>{threat.replaceAll('_', ' ')}</span>)}</div>}
+    <small className="mt-4 block border-t border-current/10 pt-3 text-[0.7rem] leading-5 opacity-60">A clean result is not a guarantee. Confirm important links through the organisation's official app or website.</small>
+  </article>
 }
 
 function formatProgress(progress: TranscriptionProgress): string {
@@ -448,6 +500,7 @@ function ResultView({ presented, onReset, defaultLanguage = 'english' }: { prese
       <article className="risk-card"><RiskDial score={result.score} /><div><span className={`risk-pill ${result.level.toLowerCase().replace(' ', '-')}`}><CircleAlert size={14} />{result.level}</span><h3>{result.scamType}</h3><p>{result.evidence.length} evidence signals · {result.confidence}% analysis confidence</p><div className="confidence-track"><span style={{ width: `${result.confidence}%` }} /></div></div></article>
       <article className="next-action"><span className="action-icon"><ShieldCheck /></span><div><small>SAFEST NEXT ACTION</small><h3>{result.score >= 65 ? 'Stop and verify independently' : 'Pause and confirm before acting'}</h3><p>{result[language]}</p></div></article>
     </div>
+    {presented.mode === 'link' && presented.linkInspection && <LinkInspectionCard inspection={presented.linkInspection} />}
     <div className="result-details">
       <article className="detail-card"><div className="detail-title"><Flag size={19} /><div><h3>Evidence detected</h3><p>Each signal contributed to the score</p></div></div><div className="evidence-list">{result.evidence.length ? result.evidence.map((item) => <div className="evidence-item" key={item.id}><span className={`severity-dot ${item.severity}`} /><div><strong>{item.title}<em>+{item.points}</em></strong><p>{language === 'english' ? item.detail : item.pidgin}</p>{item.excerpt && <small>“{item.excerpt}”</small>}</div></div>) : <div className="safe-empty"><ShieldCheck /> No strong warning pattern was detected.</div>}</div></article>
       <article className="detail-card"><div className="explain-head"><div className="detail-title"><Languages size={19} /><div><h3>Plain explanation</h3><p>Same verdict, clearer language</p></div></div><div className="language-toggle"><button className={language === 'english' ? 'selected' : ''} onClick={() => setLanguage('english')}>English</button><button className={language === 'pidgin' ? 'selected' : ''} onClick={() => setLanguage('pidgin')}>Pidgin</button></div></div><blockquote>“{result[language]}”</blockquote><button className="text-action" onClick={listen}><Volume2 size={16} /> Listen</button><div className="trace"><strong>How the score was built</strong><span>Base evidence {result.trace.basePoints} points</span><span>Pattern interactions {result.trace.interactionPoints} points</span><span>Policy {result.trace.policyVersion}</span></div></article>
